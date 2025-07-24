@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-exports.jwtMiddleware = (req, res, next) => {
+const jwtMiddleware = (req, res, next) => {
   const token = req.headers["authorization"].split(" ")[1];
   if (!token) {
     return res.status(401).json({ message: "token not found" });
@@ -12,4 +12,6 @@ exports.jwtMiddleware = (req, res, next) => {
   } catch (error) {
     res.status(401).json({ message: "authentication failed" });
   }
-};
+}; 
+
+module.exports = jwtMiddleware; 
