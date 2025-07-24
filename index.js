@@ -17,4 +17,4 @@ app.listen(PORT, () => {
 app.get('/', (req, res) => {
     res.send("Sever is running");
  })
-
+app.use('/api/users', require('./routes/userRoutes'));
