@@ -12,9 +12,21 @@ exports.getTasks = async (req, res) => {
         return res.status(404).json({ message: "Task not found" });
       }
     } else {
-      task = await tasks.find();
+      task = await tasks.find().select('-updatedAt -createdAt');
     }
     res.status(200).json({ message: "Tasks retrieved successfully", task });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+exports.getUserTasks = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const userTasks = await tasks.find({ _id:userId });
+    res
+      .status(200)
+      .json({ message: "Tasks retrieved successfully", tasks: userTasks });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -64,3 +76,4 @@ exports.deleteTask = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
