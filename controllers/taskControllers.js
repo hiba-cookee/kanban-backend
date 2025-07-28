@@ -1,45 +1,7 @@
+const mongoose = require("mongoose");
 const tasks = require("../models/taskModel");
 
-exports.createTask = async (req, res) => {
-  try {
-    const { title, description, category, tag, color } = req.body;
-    if (!title || !category) {
-      return res
-        .status(400)
-        .json({ message: "Title and category are required" });
-    }
-    const { id } = req.params;
-    if (id) {
-      if (!existingTask) {
-        return res.status(404).json({ message: "Task not found" });
-      }
-      const updatedTask = await tasks.findByIdAndUpdate(
-        {
-          _id: id,
-        },
-        {
-          title: title ? title : existingTask.title,
-          description: description ? description : existingTask.description,
-          category: category ? category : existingTask.category,
-          tag: tag ? tag : existingTask.tag,
-          color: color ? color : existingTask.color,
-        },
-        { new: true }
-      );
-      res
-        .status(200)
-        .json({ message: "Task updated successfully", task: updatedTask });
-    }
 
-    const newTask = new tasks({ title, description, category, tag, color });
-    await newTask.save();
-    res
-      .status(201)
-      .json({ message: "Task created successfully", task: newTask });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
 
 exports.getTasks = async (req, res) => {
   try {
@@ -58,30 +20,34 @@ exports.getTasks = async (req, res) => {
   }
 };
 
-exports.updateTask = async (req, res) => {
+exports.createOrUpdate = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, category, tag, color } = req.body;
-    const existingTask = await tasks.findById(id);
+    const existingTask = await tasks.findOneAndUpdate(
+      { _id: id ? id : new mongoose.Types.ObjectId() },
+      {
+        userId:req.userId,
+        title,
+        description,
+        category,
+        tag,
+        color,
+      },
+      {
+        upsert: true, //create new doc if it doesn't exist
+        new: true,
+      }
+    );
     if (!existingTask) {
       return res.status(404).json({ message: "Task not found" });
     }
-    const updatedTask = await tasks.findByIdAndUpdate(
-      {
-        _id: id,
-      },
-      {
-        title: title ? title : existingTask.title,
-        description: description ? description : existingTask.description,
-        category: category ? category : existingTask.category,
-        tag: tag ? tag : existingTask.tag,
-        color: color ? color : existingTask.color,
-      },
-      { new: true }
-    );
     res
       .status(200)
-      .json({ message: "Task updated successfully", task: updatedTask });
+      .json({
+        message: "Task created or updated successfully",
+        task: existingTask,
+      });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
