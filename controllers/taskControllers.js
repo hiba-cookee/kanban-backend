@@ -8,6 +8,29 @@ exports.createTask = async (req, res) => {
         .status(400)
         .json({ message: "Title and category are required" });
     }
+    const { id } = req.params;
+    if (id) {
+      if (!existingTask) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      const updatedTask = await tasks.findByIdAndUpdate(
+        {
+          _id: id,
+        },
+        {
+          title: title ? title : existingTask.title,
+          description: description ? description : existingTask.description,
+          category: category ? category : existingTask.category,
+          tag: tag ? tag : existingTask.tag,
+          color: color ? color : existingTask.color,
+        },
+        { new: true }
+      );
+      res
+        .status(200)
+        .json({ message: "Task updated successfully", task: updatedTask });
+    }
+
     const newTask = new tasks({ title, description, category, tag, color });
     await newTask.save();
     res
