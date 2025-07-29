@@ -9,7 +9,6 @@ router.get("/get-tasks", jwtMiddleware, taskControllers.getTasks);
 router.put("/update-task/:id", jwtMiddleware, taskControllers.createOrUpdate);
 router.delete("/delete-task/:id", jwtMiddleware, taskControllers.deleteTask);
 router.get("/get-tasks/:id", jwtMiddleware, taskControllers.getTasks);
-router.get('/user-tasks',jwtMiddleware,taskControllers.getUserTasks)
-
+router.get("/user-tasks", jwtMiddleware, taskControllers.getUserTasks);
 
 module.exports = router;

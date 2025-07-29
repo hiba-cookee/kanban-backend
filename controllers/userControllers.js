@@ -43,10 +43,30 @@ exports.loginUser = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
   try {
-    const allUser = await users
-      .find()
-      .populate({ path: "tasks", select: "-createdAt -updatedAt" })
-      .select("-password -email ");
+    const allUser = await users.aggregate([
+  {
+    $lookup: {
+      from: "tasks",
+      localField: "_id",
+      foreignField: "userId",
+      as: "user_tasks"
+    }
+  },
+  {
+    $project: {
+      user_tasks: {
+        title: 1,
+        description: 1,
+        category: 1,
+        tag: 1,
+        color: 1,
+      },
+      fullName: {
+        $concat: ["$firstName", " ", "$lastName"]
+      },
+    }
+  },
+]);
     res
       .status(200)
       .json({ message: "Users retrieved successfully", allUser: allUser });
