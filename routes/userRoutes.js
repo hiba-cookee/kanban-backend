@@ -1,4 +1,5 @@
-const userControllers = require('../controllers/userControllers')
+// const userControllers = require('../controllers/userControllers')
+const userControllers = require('../controllers/user')
 const express = require('express');
 const jwtMiddleware = require('../middlewares/jwtMiddleware');
 
