@@ -1,11 +1,19 @@
-const { fn, col } = require("sequelize");
+const { fn, col, Op } = require("sequelize");
 const { Task } = require("../models");
 const { User } = require("../models");
+const { Category } = require("../models");
 const { sequelize } = require("../models");
 
 exports.createTask = async (req, res, next) => {
   try {
     const { title, description = null, category, tag = null, color } = req.body;
+    const lastSortOrder = await Task.findOne({
+      where: {
+        category,
+      },
+      order: [["sortOrder", "DESC"]],
+    });
+    const newSortOrder = lastSortOrder ? lastSortOrder.sortOrder + 1 : 1;
     const task = await Task.create({
       userId: req.userId,
       title,
@@ -13,6 +21,7 @@ exports.createTask = async (req, res, next) => {
       category,
       tag,
       color,
+      sortOrder: newSortOrder,
     });
     // const [task] = await sequelize.query(
     //   `INSERT INTO "Tasks" ("userId","title", "description", "category", "tag", "color") VALUES (:userId,:title,:description,:category,:tag,:color) RETURNING*`,
@@ -37,11 +46,55 @@ exports.createTask = async (req, res, next) => {
 exports.updateTask = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description = null, category, tag = null, color } = req.body;
+    const {
+      title,
+      description = null,
+      category,
+      tag = null,
+      color,
+      newSortOrder,
+    } = req.body;
     const task = await Task.findByPk(id);
     if (!task) {
       throw new Error("Task Not Found");
     }
+    let lastSortOrder;
+    if (category !== task.category) {
+      lastSortOrder = await Task.findOne({
+        where: {
+          category: task.category,
+        },
+        order: [["sortOrder", "DESC"]],
+      });
+      console.log(lastSortOrder);
+      // newSortOrder = lastSortOrder ? lastSortOrder.sortOrder + 1 : 1;
+    }
+    lastSortOrder = await Task.findOne({
+      where: {
+        category
+      },
+      order: [['sortOrder','DESC']]
+    })
+    await Task.decrement("sortOrder", {
+      by: 1,
+      where: {
+        sortOrder: {
+          [Op.gt]: task.sortOrder,
+          [Op.lte]: lastSortOrder.sortOrder,
+        },
+        category: task.category,
+      },
+    });
+    await Task.increment("sortOrder", {
+      by: 1,
+      where: {
+        sortOrder: {
+          [Op.gte]: newSortOrder,
+          [Op.lte]:lastSortOrder.sortOrder
+        },
+        category,
+      },
+    });
     await Task.update(
       {
         title,
@@ -49,11 +102,13 @@ exports.updateTask = async (req, res, next) => {
         category,
         tag,
         color,
+        sortOrder: newSortOrder,
       },
       {
         where: { id },
       }
     );
+
     // const [task] = await sequelize.query(`SELECT * FROM "Tasks" WHERE "id"=?`, {
     //   replacements: [id],
     //   type: sequelize.QueryTypes.SELECT,
@@ -100,12 +155,21 @@ exports.getTask = async (req, res, next) => {
       //   }
       // );
       // task = result;
-      if (!task || task.userId != req.userId) throw new Error("Task Not Found!");
+      if (!task || task.userId != req.userId)
+        throw new Error("Task Not Found!");
     } else {
       task = await Task.findAll({
         where: {
           userId: req.userId,
         },
+        include: [
+          {
+            model: Category,
+            as: "categoryName",
+            attributes: ["category"],
+          },
+        ],
+        order: [["sortOrder", "ASC"]],
       });
 
       // const allTask = await sequelize.query(
@@ -124,7 +188,6 @@ exports.getTask = async (req, res, next) => {
 
 exports.getAllTasks = async (req, res, next) => {
   try {
-    
     const allTask = await Task.findAll({
       include: [
         {
@@ -164,7 +227,14 @@ exports.deleteTask = async (req, res, next) => {
       throw new Error("Task not found!");
     }
     await task.destroy();
-
+    await Task.decrement("sortOrder", {
+      by: 1,
+      where: {
+        sortOrder: {
+          [Op.gt]: task.sortOrder,
+        },
+      },
+    });
     // const [task] = await sequelize.query(
     //   `DELETE FROM "Tasks" where id=? RETURNING*`,
     //   {
@@ -172,7 +242,50 @@ exports.deleteTask = async (req, res, next) => {
     //     type: sequelize.QueryTypes.DELETE,
     //   }
     // );
-    res.status(200).json({ message: "Task deleted"});
+    res.status(200).json({ message: "Task deleted" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.updateSortOrder = async (req, res, next) => {
+  try {
+    const { taskId, newIndex, category } = req.body;
+    const newSortOrder = newIndex + 1; //3
+
+    const task = await Task.findByPk(taskId);
+    if (!task) return res.status(404).json({ message: "Task not found" });
+
+    const oldSortOrder = task.sortOrder; //5
+
+    if (newSortOrder < oldSortOrder) {
+      await Task.increment("sortOrder", {
+        by: 1,
+        where: {
+          sortOrder: {
+            [Op.gte]: newSortOrder,
+            [Op.lt]: oldSortOrder,
+          },
+          category,
+        },
+      });
+    } else if (newSortOrder > oldSortOrder) {
+      await Task.decrement("sortOrder", {
+        by: 1,
+        where: {
+          sortOrder: {
+            [Op.lte]: newSortOrder,
+            [Op.gt]: oldSortOrder,
+          },
+          category,
+        },
+      });
+    }
+
+    task.sortOrder = newSortOrder;
+    await task.save();
+
+    res.status(200).json({ message: "Sort order updated", task });
   } catch (error) {
     next(error);
   }

@@ -18,6 +18,7 @@ router.get("/all-tasks", jwtMiddleware, taskControllers.getAllTasks);
 router.post("/create-task", jwtMiddleware, taskControllers.createTask);
 router.delete('/delete-task/:id',jwtMiddleware,taskControllers.deleteTask)
 router.put("/update-task/:id", jwtMiddleware, taskControllers.updateTask);
+router.put("/update-sortOrder", jwtMiddleware, taskControllers.updateSortOrder);
 
 
 module.exports = router;

@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "userId",
         as: "created_by",
       });
+      Task.belongsTo(models.Category, {
+        foreignKey: "category",
+        as: "categoryName",
+      });
     }
   }
   Task.init(
@@ -23,14 +27,37 @@ module.exports = (sequelize, DataTypes) => {
       },
       description: DataTypes.STRING,
       category: {
-        type: DataTypes.STRING,
+        type: DataTypes.INTEGER,
         allowNull: false,
       },
       tag: DataTypes.STRING,
-      color: DataTypes.STRING,
+      color: {
+        allowNull: false,
+        type: DataTypes.STRING,
+        defaultValue: "#FFFFFF",
+      },
+      sortOrder: {
+        allowNull: false,
+        // unique: false,
+        type: DataTypes.INTEGER,
+      },
       userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          model: "Users",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+      },
+      createdAt: {
+        allowNull: false,
+        type: DataTypes.DATE,
+      },
+      updatedAt: {
+        allowNull: false,
+        type: DataTypes.DATE,
       },
     },
     {

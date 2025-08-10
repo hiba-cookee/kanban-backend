@@ -12,6 +12,8 @@ app.use(express.json());
 
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/tasks", require("./routes/taskroutes"));
+app.use("/api/category", require("./routes/categoryRoutes"));
+
 
 app.use((err, req, res, next) => {
   console.log(err.message);
